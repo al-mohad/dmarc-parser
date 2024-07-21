@@ -8,9 +8,6 @@ import 'package:printing/printing.dart';
 import 'package:xml/xml.dart' as xml;
 
 class HomeController extends GetxController {
-  //TODO: Implement HomeController
-
-  final count = 0.obs;
   @override
   void onInit() {
     print('object');
@@ -30,6 +27,9 @@ class HomeController extends GetxController {
   }
 
   String _xmlContent = '';
+
+  final _orgName = RxString('Unknown');
+  String get orgName => _orgName.value;
   final _records = RxList<Map<String, String>>([]);
   List<Map<String, String>> get records => _records;
 
@@ -49,6 +49,7 @@ class HomeController extends GetxController {
     var document = xml.XmlDocument.parse(content);
     var records = document.findAllElements('record');
     List<Map<String, String>> parsedRecords = [];
+    _orgName.value = document.findAllElements('org_name').first.text;
 
     for (var record in records) {
       var row = record.findElements('row').first;
@@ -81,46 +82,89 @@ class HomeController extends GetxController {
         'spf': spf,
       });
     }
-
     _records.value = parsedRecords;
     update();
   }
 
   void generatePdf() async {
     final font = await PdfGoogleFonts.nunitoExtraLight();
-
+    final titleStyle =
+        pw.TextStyle(font: font, fontSize: 20, fontWeight: pw.FontWeight.bold);
+    final style = pw.TextStyle(font: font, color: PdfColors.black);
     final pdf = pw.Document();
+
     pdf.addPage(
       pw.Page(
         build: (pw.Context context) {
-          return pw.ListView.builder(
-            itemCount: _records.length,
-            itemBuilder: (context, index) {
-              final record = _records[index];
-              return pw.Container(
-                margin: const pw.EdgeInsets.symmetric(vertical: 5),
-                child: pw.Column(
-                  crossAxisAlignment: pw.CrossAxisAlignment.start,
-                  children: [
-                    pw.Text('Source IP: ${record['source_ip']}',
-                        style: pw.TextStyle(font: font)),
-                    pw.Text('Count: ${record['count']}',
-                        style: pw.TextStyle(font: font)),
-                    pw.Text('Disposition: ${record['disposition']}',
-                        style: pw.TextStyle(font: font)),
-                    pw.Text('DKIM: ${record['dkim']}',
-                        style: pw.TextStyle(font: font)),
-                    pw.Text('SPF: ${record['spf']}',
-                        style: pw.TextStyle(font: font)),
-                    pw.Divider(),
-                  ],
+          return pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              pw.Text(
+                'Organization: $_orgName',
+                style: titleStyle,
+              ),
+              pw.SizedBox(height: 20),
+              pw.Expanded(
+                child: pw.ListView.builder(
+                  itemCount: _records.length,
+                  itemBuilder: (context, index) {
+                    final record = _records[index];
+                    return pw.Container(
+                      margin: const pw.EdgeInsets.symmetric(vertical: 5),
+                      child: pw.Column(
+                        crossAxisAlignment: pw.CrossAxisAlignment.start,
+                        children: [
+                          pw.Text('Source IP: ${record['source_ip']}',
+                              style: style),
+                          pw.Text('Count: ${record['count']}', style: style),
+                          pw.Text('Disposition: ${record['disposition']}',
+                              style: style),
+                          pw.Text('DKIM: ${record['dkim']}', style: style),
+                          pw.Text('SPF: ${record['spf']}', style: style),
+                          pw.Divider(),
+                        ],
+                      ),
+                    );
+                  },
                 ),
-              );
-            },
+              )
+            ],
           );
         },
       ),
     );
+
+    // pdf.addPage(
+    //   pw.Page(
+    //     build: (pw.Context context) {
+    //       return pw.ListView.builder(
+    //         itemCount: _records.length,
+    //         itemBuilder: (context, index) {
+    //           final record = _records[index];
+    //           return pw.Container(
+    //             margin: const pw.EdgeInsets.symmetric(vertical: 5),
+    //             child: pw.Column(
+    //               crossAxisAlignment: pw.CrossAxisAlignment.start,
+    //               children: [
+    //                 pw.Text('Source IP: ${record['source_ip']}',
+    //                     style: pw.TextStyle(font: font)),
+    //                 pw.Text('Count: ${record['count']}',
+    //                     style: pw.TextStyle(font: font)),
+    //                 pw.Text('Disposition: ${record['disposition']}',
+    //                     style: pw.TextStyle(font: font)),
+    //                 pw.Text('DKIM: ${record['dkim']}',
+    //                     style: pw.TextStyle(font: font)),
+    //                 pw.Text('SPF: ${record['spf']}',
+    //                     style: pw.TextStyle(font: font)),
+    //                 pw.Divider(),
+    //               ],
+    //             ),
+    //           );
+    //         },
+    //       );
+    //     },
+    //   ),
+    // );
 
     await Printing.layoutPdf(
       onLayout: (PdfPageFormat format) async => pdf.save(),

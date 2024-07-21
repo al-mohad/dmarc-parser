@@ -20,6 +20,12 @@ class HomeView extends GetView<HomeController> {
             onPressed: controller.pickXmlFile,
             child: const Text('Pick XML File', style: s),
           ),
+          Obx(() => Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Text('Organization: ${controller.orgName}',
+                    style: const TextStyle(
+                        fontSize: 20, fontWeight: FontWeight.bold)),
+              )),
           Obx(
             () => Expanded(
               child: ListView.builder(
